@@ -103,7 +103,7 @@ var reformulationChatHistoryProvider = new InMemoryChatHistoryProvider(new()
 var reformulationAgent = openAIClient
     .AsAIAgent(new ChatClientAgentOptions
     {
-        Name = "reformulation-agent"
+        Name = "reformulation-agent",
         ChatOptions = new()
         {
             Instructions = """
