@@ -59,3 +59,45 @@ Question: What do you know about Mars?
 
 - The current search implementation is a simple in-memory demo provider.
 - The app is intended as a minimal sample to explore question reformulation, retrieval, and streaming responses in a console-based RAG experience.
+
+## Architecture
+
+The application is organized around two agents and one contextual search provider:
+
+- **Reformulation agent**: rewrites the user question using the current chat context so retrieval works better, while preserving the original language.
+- **RAG agent**: receives the reformulated question, uses retrieved context, and generates the final answer.
+- **Search provider**: returns matching `TextSearchResult` items from an in-memory dataset used as demo knowledge.
+
+High-level flow:
+
+1. The user enters a question in the console.
+2. The reformulation agent rewrites the question for retrieval.
+3. The search provider returns relevant contextual snippets.
+4. The main agent answers using only the provided context.
+5. The response is streamed back to the console.
+
+Key implementation pieces:
+
+- `Program.cs`: application setup, agent creation, session handling, and console loop
+- `SearchProvider`: demo retrieval layer backed by in-memory sample data
+- `TraceHttpClientHandler`: traces outgoing HTTP request payloads for inspection
+- `Constants.cs`: endpoint, deployment, and API key configuration
+
+## Sample output
+
+Example session:
+
+```text
+Question: What do you know about Mars?
+Mars is the fourth planet from the Sun and is a terrestrial planet. It is often called the red planet because of the large amount of iron oxide on its surface. It has a thin atmosphere, polar ice caps, volcanoes, valleys, and evidence of water ice. Its two natural satellites are Phobos and Deimos.
+
+Question: How long is a day on Mars?
+The solar day on Mars, called a Sol, lasts 24 hours, 37 minutes, and 23 seconds.
+```
+
+Example of an out-of-scope answer:
+
+```text
+Question: Who wrote The Divine Comedy?
+I don't have that information in the given context. Please refine the question based on the available content.
+```

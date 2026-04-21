@@ -103,6 +103,7 @@ var reformulationChatHistoryProvider = new InMemoryChatHistoryProvider(new()
 var reformulationAgent = openAIClient
     .AsAIAgent(new ChatClientAgentOptions
     {
+        Name = "reformulation-agent"
         ChatOptions = new()
         {
             Instructions = """
@@ -132,9 +133,10 @@ var chatHistoryProvider = new InMemoryChatHistoryProvider(new()
     }
 });
 
-var agent = openAIClient
+var ragAgent = openAIClient
     .AsAIAgent(new ChatClientAgentOptions
     {
+        Name = "rag-agent",
         ChatOptions = new()
         {
             Instructions = """
@@ -158,7 +160,7 @@ var agent = openAIClient
 
 //var ragAgent = AgentWorkflowBuilder.BuildSequential(reformulationAgent, agent).AsAIAgent(name: "rag-agent");
 
-var session = await agent.CreateSessionAsync();
+var session = await ragAgent.CreateSessionAsync();
 
 while (true)
 {
@@ -169,7 +171,7 @@ while (true)
 
     var reformulationResponse = await reformulationAgent.RunAsync(question, session);
 
-    var response = agent.RunStreamingAsync(reformulationResponse.Text, session);
+    var response = ragAgent.RunStreamingAsync(reformulationResponse.Text, session);
     await foreach (var update in response)
     {
         Console.Write(update);
