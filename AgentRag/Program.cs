@@ -1,18 +1,16 @@
 ﻿using System.ClientModel;
 using System.ClientModel.Primitives;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using AgentRag;
 using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
 
 TextSearchProviderOptions textSearchOptions = new()
 {
-    SearchTime = TextSearchProviderOptions.TextSearchBehavior.BeforeAIInvoke,
-    //RecentMessageMemoryLimit = 6
     //CitationsPrompt = "When you use information from the context, include citations in the format: [SourceName](SourceLink)",
     //ContextFormatter = results =>
     //{
@@ -44,48 +42,48 @@ TextSearchProviderOptions textSearchOptions = new()
 
     //    return sb.ToString();
     //}
-    //ContextFormatter = results =>
-    //{
-    //    var sb = new StringBuilder();
+    ContextFormatter = results =>
+    {
+        var sb = new StringBuilder();
 
-    //    sb.AppendLine("## Additional Context");
-    //    sb.AppendLine("Use the excerpts below to answer the user.");
-    //    sb.AppendLine("Citation rules:");
-    //    sb.AppendLine("- Do NOT add inline citations.");
-    //    sb.AppendLine("- At the END of your answer, add a single line exactly like:");
-    //    sb.AppendLine("  Sources: [SourceName](SourceLink), [SourceName](SourceLink)");
-    //    sb.AppendLine("- Include ONLY sources you actually used. No duplicates.");
-    //    sb.AppendLine();
+        sb.AppendLine("## Additional Context");
+        sb.AppendLine("Use the excerpts below to answer the user.");
+        sb.AppendLine("Citation rules:");
+        sb.AppendLine("- Do NOT add inline citations.");
+        sb.AppendLine("- At the END of your answer, add a single line exactly like:");
+        sb.AppendLine("  Sources: [SourceName](SourceLink), [SourceName](SourceLink)");
+        sb.AppendLine("- Include ONLY sources you actually used. No duplicates.");
+        sb.AppendLine();
 
-    //    sb.AppendLine("### Sources (copy/paste-ready)");
-    //    foreach (var (i, r) in results.Index())
-    //    {
-    //        var name = string.IsNullOrWhiteSpace(r.SourceName) ? $"Source {i + 1}" : r.SourceName;
+        sb.AppendLine("### Sources (copy/paste-ready)");
+        foreach (var (i, r) in results.Index())
+        {
+            var name = string.IsNullOrWhiteSpace(r.SourceName) ? $"Source {i + 1}" : r.SourceName;
 
-    //        if (!string.IsNullOrWhiteSpace(r.SourceLink))
-    //        {
-    //            sb.AppendLine($"- [{name}]({r.SourceLink})");
-    //        }
-    //        else
-    //        {
-    //            sb.AppendLine($"- {name}");
-    //        }
-    //    }
+            if (!string.IsNullOrWhiteSpace(r.SourceLink))
+            {
+                sb.AppendLine($"- [{name}]({r.SourceLink})");
+            }
+            else
+            {
+                sb.AppendLine($"- {name}");
+            }
+        }
 
-    //    sb.AppendLine();
+        sb.AppendLine();
 
-    //    sb.AppendLine("### Excerpts");
-    //    foreach (var (i, r) in results.Index())
-    //    {
-    //        var name = string.IsNullOrWhiteSpace(r.SourceName) ? $"Source {i + 1}" : r.SourceName;
+        sb.AppendLine("### Excerpts");
+        foreach (var (i, r) in results.Index())
+        {
+            var name = string.IsNullOrWhiteSpace(r.SourceName) ? $"Source {i + 1}" : r.SourceName;
 
-    //        sb.AppendLine($"[{i + 1}] {name}");
-    //        sb.AppendLine(r.Text);
-    //        sb.AppendLine();
-    //    }
+            sb.AppendLine($"[{i + 1}] {name}");
+            sb.AppendLine(r.Text);
+            sb.AppendLine();
+        }
 
-    //    return sb.ToString();
-    //}
+        return sb.ToString();
+    }
 };
 
 var openAIClient = new OpenAIClient(new ApiKeyCredential(Constants.ApiKey), new()
@@ -158,16 +156,12 @@ var ragAgent = openAIClient
         AIContextProviders = [new TextSearchProvider(new SearchProvider().SearchAsync, textSearchOptions)]
     });
 
-//var ragAgent = AgentWorkflowBuilder.BuildSequential(reformulationAgent, agent).AsAIAgent(name: "rag-agent");
-
 var session = await ragAgent.CreateSessionAsync();
 
 while (true)
 {
     Console.Write("Question: ");
     var question = Console.ReadLine()!;
-
-    //var response = await ragAgent.RunAsync(question, session);
 
     var reformulationResponse = await reformulationAgent.RunAsync(question, session);
 
@@ -199,7 +193,7 @@ public class SearchProvider
 {
     public Task<IEnumerable<TextSearchProvider.TextSearchResult>> SearchAsync(string query, CancellationToken cancellationToken)
     {
-        List<TextSearchProvider.TextSearchResult> results = [];
+        var results = new List<TextSearchProvider.TextSearchResult>();
 
         if (query.Contains("taggia", StringComparison.OrdinalIgnoreCase))
         {
