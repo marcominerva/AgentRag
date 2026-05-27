@@ -329,10 +329,9 @@ public class TraceHttpClientHandler : HttpClientHandler
 
         static void PrintText(string message, ConsoleColor color)
         {
-            var originalColor = Console.ForegroundColor;
             Console.ForegroundColor = color;
             Console.WriteLine(message);
-            Console.ForegroundColor = originalColor;
+            Console.ResetColor();
         }
 
         static void PrintSeparator() => Console.WriteLine(new string('-', 50));
