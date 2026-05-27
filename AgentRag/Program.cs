@@ -8,6 +8,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
+using OpenAI.Responses;
 
 TextSearchProviderOptions textSearchOptions = new()
 {
@@ -90,12 +91,12 @@ var openAIClient = new OpenAIClient(new ApiKeyCredential(Constants.ApiKey), new(
 {
     Endpoint = new(Constants.Endpoint),
     Transport = new HttpClientPipelineTransport(new HttpClient(new TraceHttpClientHandler()))
-}).GetChatClient(Constants.DeploymentName).AsIChatClient();
+}).GetResponsesClient().AsIChatClientWithStoredOutputDisabled(Constants.DeploymentName);
 
 var reformulationChatHistoryProvider = new InMemoryChatHistoryProvider(new()
 {
-    StorageInputRequestMessageFilter = messages => [],
-    StorageInputResponseMessageFilter = messages => []
+    StorageInputRequestMessageFilter = _ => [],
+    StorageInputResponseMessageFilter = _ => []
 });
 
 var reformulationAgent = openAIClient
@@ -115,7 +116,12 @@ var reformulationAgent = openAIClient
                 Never add "in this chat", "in the context of this chat", "in the context of our conversation", "search for" or something like that in your answer.
                 Your answer must contain only the reformulated question and nothing else.
                 Never add follow-up messages, clarifications, notes, disclaimers, or requests for more information such as "if you give me more information, I can be more precise".
-                """
+                """,
+            Reasoning = new()
+            {
+                Effort = ReasoningEffort.Low,
+                Output = ReasoningOutput.Summary
+            }
         },
         ChatHistoryProvider = reformulationChatHistoryProvider
     });
@@ -171,7 +177,7 @@ while (true)
         Console.Write(update);
     }
 
-    session.TryGetInMemoryChatHistory(out var messages);
+    //session.TryGetInMemoryChatHistory(out var messages);
 
     //var response = await agent.RunAsync<Response>(question, session);
 
