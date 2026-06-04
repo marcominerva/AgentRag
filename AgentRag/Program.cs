@@ -5,6 +5,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using AgentRag;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
@@ -162,6 +163,8 @@ var ragAgent = openAIClient
         AIContextProviders = [new TextSearchProvider(new SearchProvider().SearchAsync, textSearchOptions)]
     });
 
+//var agent = AgentWorkflowBuilder.BuildSequential(reformulationAgent, ragAgent).AsAIAgent();
+
 var session = await ragAgent.CreateSessionAsync();
 
 while (true)
@@ -176,6 +179,9 @@ while (true)
     {
         Console.Write(update);
     }
+
+    //var json = await reformulationAgent.SerializeSessionAsync(session);
+    //var text = json.GetRawText();
 
     //session.TryGetInMemoryChatHistory(out var messages);
 
