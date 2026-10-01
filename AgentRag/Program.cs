@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using AgentRag;
+using AgentRag.Agents;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
@@ -103,6 +104,7 @@ var reformulationChatHistoryProvider = new InMemoryChatHistoryProvider(new()
 var reformulationAgent = openAIClient
     .AsAIAgent(new ChatClientAgentOptions
     {
+        Id = "reformulation-agent",
         Name = "reformulation-agent",
         ChatOptions = new()
         {
@@ -141,6 +143,7 @@ var chatHistoryProvider = new InMemoryChatHistoryProvider(new()
 var ragAgent = openAIClient
     .AsAIAgent(new ChatClientAgentOptions
     {
+        Id = "rag-agent",
         Name = "rag-agent",
         ChatOptions = new()
         {
@@ -163,6 +166,9 @@ var ragAgent = openAIClient
         AIContextProviders = [new TextSearchProvider(new SearchProvider().SearchAsync, textSearchOptions)]
     });
 
+// Create a KnowledgeSearchAgent that combines the reformulation agent and the RAG agent.
+var agent = new KnowledgeSearchAgent(ragAgent, reformulationAgent);
+
 //var agent = AgentWorkflowBuilder.BuildSequential(reformulationAgent, ragAgent).AsAIAgent();
 
 var session = await ragAgent.CreateSessionAsync();
@@ -172,15 +178,13 @@ while (true)
     Console.Write("Question: ");
     var question = Console.ReadLine()!;
 
-    var reformulationResponse = await reformulationAgent.RunAsync(question, session);
-
-    var response = ragAgent.RunStreamingAsync(reformulationResponse.Text, session);
+    var response = agent.RunStreamingAsync(question, session);
     await foreach (var update in response)
     {
         Console.Write(update);
     }
 
-    //var json = await reformulationAgent.SerializeSessionAsync(session);
+    //var json = await agent.SerializeSessionAsync(session);
     //var text = json.GetRawText();
 
     //session.TryGetInMemoryChatHistory(out var messages);

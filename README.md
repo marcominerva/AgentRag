@@ -62,23 +62,28 @@ Question: What do you know about Mars?
 
 ## Architecture
 
-The application is organized around two agents and one contextual search provider:
+The application exposes a single `KnowledgeSearchAgent` that composes two specialized agents and one contextual search provider:
 
 - **Reformulation agent**: rewrites the user question using the current chat context so retrieval works better, while preserving the original language.
 - **RAG agent**: receives the reformulated question, uses retrieved context, and generates the final answer.
 - **Search provider**: returns matching `TextSearchResult` items from an in-memory dataset used as demo knowledge.
 
+Both specialized agents share the same session. The reformulation agent reads the conversation context but does not persist its own request or response, so the session contains only reformulated questions and final answers. The composite agent also exposes the reformulated question and its token usage through response metadata.
+
 High-level flow:
 
-1. The user enters a question in the console.
-2. The reformulation agent rewrites the question for retrieval.
-3. The search provider returns relevant contextual snippets.
-4. The main agent answers using only the provided context.
-5. The response is streamed back to the console.
+1. The user submits a question to `KnowledgeSearchAgent`.
+2. The composite agent asks the reformulation agent to turn it into a self-contained question.
+3. The composite agent delegates the reformulated question to the RAG agent.
+4. The search provider supplies relevant contextual snippets to the RAG agent.
+5. The RAG agent answers using only the provided context.
+6. `KnowledgeSearchAgent` streams the answer back to the console and exposes the reformulation metadata.
 
 Key implementation pieces:
 
-- `Program.cs`: application setup, agent creation, session handling, and console loop
+- `Program.cs`: application setup, composite agent creation, session handling, and console loop
+- `Agents/KnowledgeSearchAgent.cs`: single entry point that coordinates reformulation and RAG execution
+- `Agents/ReformulationExtensions.cs`: helpers for reading reformulation details from responses and streaming updates
 - `SearchProvider`: demo retrieval layer backed by in-memory sample data
 - `TraceHttpClientHandler`: traces outgoing HTTP request payloads for inspection
 - `Constants.cs`: endpoint, deployment, and API key configuration
